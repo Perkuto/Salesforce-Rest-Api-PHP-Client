@@ -27,7 +27,7 @@ class SFClient {
 	
 	private const SANDBOX_URL = 'https://test.salesforce.com/services/oauth2/token';
 	
-	public function  __construct($username, $password, $user_token, $client_id, $client_secret, $isSandbox){
+	public function  __construct($username, $password, $user_token, $client_id, $client_secret, $isSandbox = false){
 		$ch = curl_init();
 		
 		$fields = array(
