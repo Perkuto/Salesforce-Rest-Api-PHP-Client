@@ -1,0 +1,9 @@
+{
+
+    "name": "victorglt/salesforce-rest",
+    "autoload": {
+        "psr-0" : {
+            "Victorglt\\Salesforce" : "src"
+        }
+    }
+}
