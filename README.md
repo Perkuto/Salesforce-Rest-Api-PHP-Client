@@ -21,7 +21,7 @@ $client->getObject('Account', 'Name, BillingStreet', '001900K0001pPuOAAU');
 Update Object
 
 ```
-$client->getObject('Account', array('Name' => 'Victor'), '001900K0001pPuOAAU');
+$client->updateObject('Account', array('Name' => 'Victor'), '001900K0001pPuOAAU');
 
 ```
 
