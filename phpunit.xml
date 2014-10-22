@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<phpunit colors="true" bootstrap="phpunit_bootstrap.php">
+ 
+    <testsuites>
+        <testsuite name="Salesforce Tests">
+            <directory>test</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

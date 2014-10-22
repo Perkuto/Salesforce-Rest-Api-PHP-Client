@@ -18,11 +18,12 @@
 	 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+namespace Victorglt\Salesforce;
 
 class SalesforceException extends \Exception{
 	
-	public function __construct($message, $code = 0) {
-		parent::__construct($message, $code);
+	public function __construct($message, $code = 0, \Exception $previous = null) {
+		parent::__construct($message, $code, $previous);
 	}
 	
 }

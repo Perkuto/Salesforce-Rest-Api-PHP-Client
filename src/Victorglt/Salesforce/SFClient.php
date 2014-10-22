@@ -19,153 +19,84 @@
  */
 namespace Victorglt\Salesforce;
 
+use Victorglt\Network\HTTPRequest;
+
 class SFClient {
 
 	private $credentials;
-	
-	private const PROD_URL = 'https://login.salesforce.com/services/oauth2/token';
-	
-	private const SANDBOX_URL = 'https://test.salesforce.com/services/oauth2/token';
-	
+
 	public function  __construct($username, $password, $user_token, $client_id, $client_secret, $isSandbox = false){
-		$ch = curl_init();
+		$request = new HTTPRequest($isSandbox == true ? SFUrlBuilder::SANDBOX_URL : SFUrlBuilder::PROD_URL, null);
 		
-		$fields = array(
+		$result = $request->post(array(
 				'username' => $username,
 				'password' => $password.$user_token,
 				'grant_type' => 'password',
 				'client_id' => $client_id,
 				'client_secret' => $client_secret
-		);
+		));
+	
 		
-		curl_setopt($ch, CURLOPT_URL, $isSandbox == true ? self::SANDBOX_URL : self::PROD_URL);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-		curl_setopt($ch, CURLOPT_POST, TRUE);
-		curl_setopt($ch, CURLOPT_HEADER, FALSE);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($fields));
-		
-		$result = curl_exec($ch);
-		
-		curl_close($ch);
-		
-		checkError($decoded);
-		
-		$this->credentials = $decoded;
+		$this->credentials = $this->parseResult($result, $request->getStatus());
 	}
 
-
+	
 	public function getObject($object, $fields, $id){
+		$request = new HTTPRequest(SFUrlBuilder::objectUrl($this->credentials->instance_url, 'v31.0', $object,  $id, array('fields' => $fields))
+								  ,array('Authorization: Bearer '.$this->credentials->access_token));
 
-		$fieldsParameter = array('fields' => $fields);
-		
-		$ch = curl_init();
-		
-		$instance = $this->credentials->instance_url;
-		$token = $this->credentials->access_token;
-		
-		curl_setopt($ch, CURLOPT_URL, $instance.'/services/data/v31.0/sobjects/'.$object.'/'.$id.'?'.http_build_query($fieldsParameter));
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$token));
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-		curl_setopt($ch, CURLOPT_POST, false);
-		curl_setopt($ch, CURLOPT_HTTPGET, true);
-		curl_setopt($ch, CURLOPT_HEADER, false);
-
-
-		$result = curl_exec($ch);
-
-		curl_close($ch);
-
-		checkError($decoded);
-		
-		return $decoded;
+		$result = $request->get();
+		return $this->parseResult($result, $request->getStatus());	
 	}
-
-
 
 	public function query($query){
-
-		$ch = curl_init();
-
-		$instance = $this->credentials->instance_url;
-		$token = $this->credentials->access_token;
-
-		curl_setopt($ch, CURLOPT_URL, $instance.'/services/data/v31.0/query/?'.http_build_query(array('q' => $query)));
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Authorization: Bearer '.$token));
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-		curl_setopt($ch, CURLOPT_POST, false);
-		curl_setopt($ch, CURLOPT_HTTPGET, true);
-		curl_setopt($ch, CURLOPT_HEADER, false);
-
-
-		$result = curl_exec($ch);
-
-		curl_close($ch);
-
-		checkError($decoded);
-	
-		return $decoded;
-	}
-
-
-	private function updateObject($object, $data, $id){
-
-		$instance = $this->credentials->instance_url;
-		$token = $this->credentials->access_token;
+		$request = new HTTPRequest(SFUrlBuilder::queryUrl($this->credentials->instance_url, 'v31.0' , array('q' => $query))
+					,array('Authorization: Bearer '.$this->credentials->access_token));
 		
-		$json = json_encode($data);
+		$result = $request->get();
+		return $this->parseResult($result, $request->getStatus());		}
 
-		$ch = curl_init();
 
-		curl_setopt($ch,  CURLOPT_URL, $instance.'/services/data/v31.0/sobjects/'.$object.'/'.$id);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-		'Content-Type: application/json',
-		'Content-Length: ' . strlen($json),
-		'Authorization: Bearer '.$token)
-		);
-
-		$decoded = json_decode(curl_exec($ch));
-
-		checkError($decoded);
+	public function updateObject($object, $data, $id){
+		$encodedData = json_encode($data);
+		$request = new HTTPRequest(SFUrlBuilder::objectUrl($this->credentials->instance_url, 'v31.0', $object, $id, $data)
+								   ,array('Content-Type: application/json',
+									      'Content-Length: ' . strlen($encodedData),
+									      'Authorization: Bearer '.$this->credentials->access_token));
 		
-		return $decoded;
+		$result = $request->customRequest('PATCH', $encodedData);
+
+		return $this->parseResult($result, $request->getStatus());
 	}
 
 	public function createObject($object, $data){
-
-		$instance = $this->credentials->instance_url;
-		$token = $this->credentials->access_token;
 		
-		$json = json_encode($data);
+		$request = new HTTPRequest(SFUrlBuilder::objectUrl($this->credentials->instance_url, 'v31.0', $object, null, null)
+								  ,array('Content-Type: application/json',
+									     'Content-Length: ' . strlen($encodedData),
+									     'Authorization: Bearer '.$this->credentials->access_token));
 
-		$ch = curl_init();
-
-		curl_setopt($ch,  CURLOPT_URL, $instance.'/services/data/v31.0/sobjects/'.$object);
-		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-		'Content-Type: application/json',
-		'Content-Length: ' . strlen($json),
-		'Authorization: Bearer '.$token)
-		);
-
-		$decoded = json_decode(curl_exec($ch));
-
-		checkError($decoded);
-
-		return $decoded;
-
+		$result = $request->post($encodedData);
+		return $this->parseResult($result, $request->getStatus());
 	}
 	
-	private function checkError($json){
-		if(isset($json->error_code)){
-			throw new SalesforceException($json->message, $json->errorCode);
+	private function parseResult($result, $httpStatus){
+		$json = json_decode($result);
+		
+		if($httpStatus != 200 && $httpStatus != 204){
+			if(isset($json->error)){
+				throw new SalesforceException('Description: '.$json->error_description.' Error: '.$json->error, $httpStatus, null);
+			}
+			
+			if(isset($json[0]->errorCode)){
+				throw new SalesforceException('Description: '.$json[0]->message.' Error: '.$json[0]->errorCode, $httpStatus, null);
+			}
+			
+			throw new SalesforceException('Description: Unknow Error', $httpStatus, null);
+				
 		}
+		
+		return $json;
 	}
+	
 }
