@@ -28,7 +28,8 @@ class SFClient {
 	
 	private $version;
 
-	public function  __construct(Authentication $authentication, $isSandbox = false){
+	public function  __construct(Authentication $authentication, $isSandbox = false, $version){
+		$this->version = $version;
 		$request = new HTTPRequest($isSandbox == true ? SFConstants::SANDBOX_URL : SFConstants::PROD_URL, null);
 		$result = $request->post($authentication->getAuthenticationRequestFields());
 		$this->credentials = $this->parseResult($result, $request->getStatus());

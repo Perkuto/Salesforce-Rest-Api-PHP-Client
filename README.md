@@ -16,8 +16,8 @@ $authentication->setUsername('username')
 			->setClientSecret('client_secret');
 
 
-//Create client (true production, false sandbox)
-$client = new SFClient($authentication, false);
+//Create client (true production, false sandbox, and API version)
+$client = new SFClient($authentication, false, 'v31.0');
 
 ```
 
