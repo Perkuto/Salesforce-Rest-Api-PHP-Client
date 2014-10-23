@@ -20,58 +20,48 @@
 namespace Victorglt\Salesforce;
 
 use Victorglt\Network\HTTPRequest;
+use Victorglt\Authentication\Authentication;
 
 class SFClient {
 
 	private $credentials;
-
-	public function  __construct($username, $password, $user_token, $client_id, $client_secret, $isSandbox = false){
-		$request = new HTTPRequest($isSandbox == true ? SFUrlBuilder::SANDBOX_URL : SFUrlBuilder::PROD_URL, null);
-		
-		$result = $request->post(array(
-				'username' => $username,
-				'password' => $password.$user_token,
-				'grant_type' => 'password',
-				'client_id' => $client_id,
-				'client_secret' => $client_secret
-		));
 	
-		
+	private $version;
+
+	public function  __construct(Authentication $authentication, $isSandbox = false){
+		$request = new HTTPRequest($isSandbox == true ? SFConstants::SANDBOX_URL : SFConstants::PROD_URL, null);
+		$result = $request->post($authentication->getAuthenticationRequestFields());
 		$this->credentials = $this->parseResult($result, $request->getStatus());
 	}
 
 	
 	public function getObject($object, $fields, $id){
-		$request = new HTTPRequest(SFUrlBuilder::objectUrl($this->credentials->instance_url, 'v31.0', $object,  $id, array('fields' => $fields))
-								  ,array('Authorization: Bearer '.$this->credentials->access_token));
-
+		$request = new HTTPRequest($this->objectUrl($object,  $id, array('fields' => $fields)) ,array('Authorization: Bearer '.$this->credentials->access_token));
 		$result = $request->get();
 		return $this->parseResult($result, $request->getStatus());	
 	}
 
 	public function query($query){
-		$request = new HTTPRequest(SFUrlBuilder::queryUrl($this->credentials->instance_url, 'v31.0' , array('q' => $query))
-					,array('Authorization: Bearer '.$this->credentials->access_token));
-		
+		$request = new HTTPRequest($this->queryUrl(array('q' => $query)) ,array('Authorization: Bearer '.$this->credentials->access_token));
 		$result = $request->get();
-		return $this->parseResult($result, $request->getStatus());		}
+		return $this->parseResult($result, $request->getStatus());		
+	}
 
 
 	public function updateObject($object, $data, $id){
 		$encodedData = json_encode($data);
-		$request = new HTTPRequest(SFUrlBuilder::objectUrl($this->credentials->instance_url, 'v31.0', $object, $id, $data)
-								   ,array('Content-Type: application/json',
+		$request = new HTTPRequest($this->objectUrl($object, $id, $data)
+								  	,array('Content-Type: application/json',
 									      'Content-Length: ' . strlen($encodedData),
 									      'Authorization: Bearer '.$this->credentials->access_token));
 		
 		$result = $request->customRequest('PATCH', $encodedData);
-
 		return $this->parseResult($result, $request->getStatus());
 	}
 
 	public function createObject($object, $data){
-		
-		$request = new HTTPRequest(SFUrlBuilder::objectUrl($this->credentials->instance_url, 'v31.0', $object, null, null)
+		$encodedData = json_encode($data);
+		$request = new HTTPRequest($this->objectUrl($object, null, null)
 								  ,array('Content-Type: application/json',
 									     'Content-Length: ' . strlen($encodedData),
 									     'Authorization: Bearer '.$this->credentials->access_token));
@@ -99,4 +89,28 @@ class SFClient {
 		return $json;
 	}
 	
+	
+
+	private function objectUrl($object, $id, $parameters){
+		$url = implode('/', array($this->credentials->instance_url, 'services', 'data', $this->version, 'sobjects', $object));
+	
+		if(isset($id)){
+			$url = $url.'/'.$id;
+			if(isset($parameters)){
+				$url = $url.'?'.http_build_query($parameters);
+			}
+		}
+		return $url;
+	}
+	
+	private function queryUrl($parameters = array()){
+		return $this->credentials->instance_url.'/services/data/'.$this->version.'/query/?'.http_build_query($parameters);
+	}
+	
+	public function getVersion() {
+		return $this->version;
+	}
+	public function setVersion($version) {
+		$this->version = $version;
+	}	
 }

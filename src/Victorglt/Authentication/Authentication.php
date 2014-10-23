@@ -1,5 +1,4 @@
 <?php
-
 /**
  Simple Rest API for Salesforce.com
  Copyright (C) 2014 Victor Galante
@@ -18,28 +17,10 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  */
-namespace Victorglt\Salesforce;
 
-class SFUrlBuilder {
-	
-	const PROD_URL = 'https://login.salesforce.com/services/oauth2/token';
-	
-	const SANDBOX_URL = 'https://test.salesforce.com/services/oauth2/token';
-	
-	public static function objectUrl($instance, $version, $object, $id, $parameters){
-		$url = $instance.'/services/data/'.$version.'/sobjects/'.$object.'/'; 
-		
-		if(isset($id)){
-			$url = $url.$id;
-			if(isset($parameters)){
-				$url = $url.'?'.http_build_query($parameters);
-			}
-		}
+namespace Victorglt\Authentication;
 
-		return $url;
-	}
+interface Authentication {
 	
-	public static function queryUrl($instance, $version, $parameters = array()){
-		return $instance.'/services/data/'.$version.'/query/?'.http_build_query($parameters);
-	}
+	public function getAuthenticationRequestFields();
 }
