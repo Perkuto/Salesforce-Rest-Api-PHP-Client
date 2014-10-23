@@ -25,8 +25,6 @@ use Victorglt\Network\HTTPRequest;
 
 class PasswordAuth implements Authentication{
 	
-	const GRANT_TYPE = 'password';
-	
 	private $username;
 	private $password;
 	private $user_token;
