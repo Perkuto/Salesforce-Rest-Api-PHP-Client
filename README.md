@@ -1,4 +1,4 @@
-Simple REST API Client for Salesforce.com
+REST API Client for Salesforce.com
 =========================================
 
 Usage
@@ -6,25 +6,35 @@ Usage
 
 Login
 
-
 ```
-$client = new SFClient('username', 'password', 'user_token', 'client_id', 'client_secret');
+//Choose your authentication method
+$authentication = new PasswordAuth();
+$authentication->setUsername('username')
+			->setPassword('password')
+			->setUserToken('user_token')
+			->setClientId('client_id')
+			->setClientSecret('client_secret');
+
+
+//Create client (true production, false sandbox)
+$client = new SFClient($authentication, false);
 
 ```
 
 Get Object
 
 ```
+//Object name , desired fields and object id
 $client->getObject('Account', 'Name, BillingStreet', '001900K0001pPuOAAU');
 ```
 
 Update Object
 
 ```
+//Object name, data changed and object id
 $client->updateObject('Account', array('Name' => 'Victor'), '001900K0001pPuOAAU');
 
 ```
-
 
 Query
 
