@@ -28,6 +28,8 @@ class SFClient {
 	
 	private $version;
 
+	const SUCCESS_STATUSES = array(200, 204, 201);
+	
 	public function  __construct(Authentication $authentication, $isSandbox = false, $version){
 		$this->version = $version;
 		$request = new HTTPRequest($isSandbox == true ? SFConstants::SANDBOX_URL : SFConstants::PROD_URL, null);
@@ -74,7 +76,7 @@ class SFClient {
 	private function parseResult($result, $httpStatus){
 		$json = json_decode($result);
 		
-		if($httpStatus != 200 && $httpStatus != 204){
+		if(!in_array($httpStatus, self::SUCCESS_STATUSES)){
 			if(isset($json->error)){
 				throw new SalesforceException('Description: '.$json->error_description.' Error: '.$json->error, $httpStatus, null);
 			}
